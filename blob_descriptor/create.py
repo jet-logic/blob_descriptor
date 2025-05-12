@@ -58,7 +58,7 @@ class Create(Main):
             bd.no_duplicates = not self.duplicate
 
         if self.mask:
-            from .. import set_mask, mask1, mask2, mask3, mask4
+            from . import set_mask, mask1, mask2, mask3, mask4
 
             set_mask((mask1, mask2, mask3, mask4)[int(self.mask) - 1])
 
