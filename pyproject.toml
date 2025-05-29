@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "blob_descriptor"
-version = "0.0.6"
+version = "0.0.1"
 description = "Toolkit for managing large binary files through chunking and metadata descriptors"
 readme = "README.md"
 authors = [
@@ -60,11 +60,6 @@ docs = [
     "furo>=2021.11",
 ]
 
-
-[tool.pytest.ini_options]
-testpaths = ["tests"]
-python_files = "test_*.py"
-addopts = "--cov=blob_descriptor --cov-report=term-missing"
 
 [tool.black]
 line-length = 127
