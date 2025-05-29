@@ -1,25 +1,45 @@
 from logging import info
-
+from typing import IO
 from .descriptor import write_descriptor
 
 
+class AutoGet:
+
+    def __getattr__(self, name: str) -> object:
+        if not name.startswith("_get_"):
+            f = getattr(self, f"_get_{name}", None)
+            if f:
+                setattr(self, name, None)
+                v = f()
+                setattr(self, name, v)
+                return v
+        try:
+            m = super().__getattr__
+        except AttributeError:
+            raise AttributeError(f"{self.__class__.__name__} has no attribute {name}") from None
+        else:
+            return m(name)
+
+
 class ChunkLister(object):
-    def __init__(self, chunk_size):
+    """Handles splitting binary data into chunks and tracking chunk metadata."""
+
+    def __init__(self, chunk_size: int):
         from hashlib import md5
         from base64 import b64encode
 
         self.encoder = lambda b: b64encode(b).decode()
-        self.current_md = None
-        self.observers = []
-        self.chunks = []
         self.mdnew = md5
-        self.current_md = self.mdnew()
-        self.current_n = 0
-        self.current_index = 0
-        self.current_prefix = None
-        self.chunk_size = chunk_size
+        self.observers = []  #  List of observer objects to notify
+        self.chunks: list[dict[str, str | int]] = []  # List of chunk metadata dictionaries
+        self.current_md = self.mdnew()  # Current hash object being built
+        self.current_n = 0  # Bytes accumulated in current chunk
+        self.current_index = 0  # Index of current chunk
+        self.current_prefix = None  # First few bytes of current chunk
+        self.chunk_size = chunk_size  # Size of chunks in bytes
 
-    def update(self, data):
+    def update(self, data: bytes):
+        """Process incoming data and distribute to chunks"""
         B = self.chunk_size
         pos = 0
         part = data[pos : B - self.current_n]
@@ -41,6 +61,7 @@ class ChunkLister(object):
             part = data[pos : B - self.current_n]
 
     def push(self):
+        """Finalize current chunk and add to chunks list."""
         d = dict(
             md5=self.current_md.hexdigest(),
             prefix=self.encoder(self.current_prefix),
@@ -55,33 +76,45 @@ class ChunkLister(object):
         self.current_prefix = None
 
     def get_chunks(self):
+        """Get all completed chunks, finalizing any in-progress chunk.
+
+        Returns:
+            list: List of chunk metadata dictionaries
+        """
         if self.current_prefix is not None:
             self.push()
         return self.chunks
 
     def notifyObservers(self, *args):
+        """Notify all observers of chunk events.
+
+        Args:
+            *args: Event arguments (event_type, data)
+        """
         for o in self.observers:
             o.update(self, *args)
 
 
 class BlobDescriptor(object):
     def __init__(self):
-        self.files: list[Source] = []
-        self.no_duplicates = None
-        self.observers = []
-        self.chunk_writers = [
+        self.files: list[Source] = []  # List of Source objects to process
+        self.no_duplicates = None  # hether to check for duplicates
+        self.observers = []  # List of observer objects
+        self.chunk_writers: list[int | ChunkWriter] = [
             512 * 1024,
-        ]
+        ]  # List of chunk writer configurations
 
     def make_descriptor(self, **kwargs):
+        """Generate descriptor dictionary for all files."""
         block_size = kwargs.get("block_size", 16384)
         desc = kwargs.setdefault("descriptor", {})
         files = desc.setdefault("files", [])
-        cwmap = {}
+        cwmap: dict[int, ChunkLister] = {}
         for cw in self.chunk_writers:
-            cs = getattr(cw, "chunk_size", None)
-            if cs is None:
-                cs = cw  # an integer
+            if isinstance(cw, ChunkWriter):
+                cs = cw.chunk_size
+            else:
+                cs = cw
                 cw = None
             if cs in cwmap:
                 cl = cwmap[cs]
@@ -92,6 +125,7 @@ class BlobDescriptor(object):
                     cl.observers.append(cw)
                 if cw not in self.observers:
                     self.observers.append(cw)
+
         chunk_gen = cwmap.values()
         # self.notifyObservers('chunk_listers', chunk_gen)
         from hashlib import md5 as mdnew
@@ -144,23 +178,21 @@ class BlobDescriptor(object):
         desc["chunks"] = dict((g.chunk_size, g.get_chunks()) for g in chunk_gen)
         return desc
 
-    def format_descriptor_path(self, **kwargs):
-        saved = kwargs.get("dir", None)
-        if saved:
-            pass
-        else:
+    def format_descriptor_path(self, dir="", prefix="", suffix="", stem="desc", ext=".bd"):
+        """Generate path for descriptor file"""
+
+        if not dir:
+
             from tempfile import gettempdir
 
-            saved = gettempdir()
-        ext = kwargs.get("ext") or ".bd"
-        prefix = kwargs.get("prefix", "")
-        suffix = kwargs.get("suffix", "")
-        stem = kwargs.get("stem", "desc")
+            dir = gettempdir()
+
         from os.path import join
 
-        return join(saved, prefix + stem + suffix + ext)
+        return join(dir, prefix + stem + suffix + ext)
 
     def save(self, path: str | dict, **kwargs):
+        """Save descriptor to file"""
         desc = self.make_descriptor(**kwargs)
         if not path:
             from os.path import join
@@ -185,7 +217,12 @@ class BlobDescriptor(object):
             "descriptor_saved", desc, path
         )
 
-    def add_file(self, file, path=None, **kwargs):
+    def add_file(self, file, path="", **kwargs):
+        """Add file to be processed.
+        Args:
+            file (str|file-like): File path or object
+            path (str): Alternate path to store in descriptor
+        """
         if not path:
             from os.path import basename
 
@@ -196,14 +233,24 @@ class BlobDescriptor(object):
             self.files.append(FileSource(file=file, path=path))
 
     def iter_files(self):
+        """Iterate through all registered files."""
         for f in self.files:
             yield f
 
     def notifyObservers(self, *args):
+        """Notify all observers of descriptor events."""
         for o in self.observers:
             o.update(self, *args)
 
     def add_tree(self, path, **kwargs):
+        """Recursively add all files in directory tree.
+
+        Args:
+            path (str): Root directory path
+            **kwargs: Filter options:
+                excludes: Patterns to exclude
+                includes: Patterns to include
+        """
         from pathlib import Path
         from logging import info
 
@@ -231,33 +278,37 @@ class BlobDescriptor(object):
 
 
 from hashlib import md5
-from os import stat
+from os import environ, stat
 
 
-class Source:
-    path: str
+class Source(AutoGet):
+    """Base class for data sources."""
+
+    path: str  # Logical path for the source
+    md5: str | None
+    size: int | None
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}({self.path!r})"
 
+    def iter_chunks(self, block_size: int):
+        yield b""
+
 
 class RegSource(Source):
-    def __init__(self, file, path=None):
+    """Source for regular files with on-demand hash calculation."""
+
+    def __init__(self, file="", path=""):
         self.file = file
         self.path = path
 
-    def __getattr__(self, name):
-        if 0:
-            pass
-        elif name == "size":
-            self.__dict__[name] = stat(self.file).st_size
-        elif name == "md5":
-            self.__dict__[name] = self.calc_md5()
-        else:
-            raise AttributeError(name)
-        return self.__dict__[name]
+    def _get_size(self):
+        return stat(self.file).st_size
 
-    def iter_chunks(self, block_size):
+    def _get_md5(self):
+        return self.calc_md5()
+
+    def iter_chunks(self, block_size: int):
         with open(self.file, "rb") as h:
             b = h.read(block_size)
             while b:
@@ -275,6 +326,8 @@ class RegSource(Source):
 
 
 class FileSource(Source):
+    """Source for file-like objects with pre-known metadata."""
+
     def __init__(self, file, path: str = None, size: int | None = None, md5: str = ""):
         self.file = file
         self.path = path
@@ -283,7 +336,7 @@ class FileSource(Source):
         if md5:
             self.md5 = md5
 
-    def iter_chunks(self, block_size):
+    def iter_chunks(self, block_size: int):
         if hasattr(self.file, "read"):
             h = self.file
         else:
@@ -296,6 +349,8 @@ class FileSource(Source):
 
 
 class URLSource(Source):
+    """Source for remote URLs."""
+
     def __init__(self, url, path="", size=-1, md5=""):
         self.url = url
         from urllib.parse import urlparse
@@ -303,13 +358,13 @@ class URLSource(Source):
         u = urlparse(url.strip("/"))
         self.path = path or u.path.split("/")[-1]
 
-    def iter_chunks(self, block_size):
+    def iter_chunks(self, block_size: int):
         from requests import get as fetch
 
         return fetch(self.url).iter_content(block_size)
 
 
-def mask1(md5, total_size, block_size):  #
+def mask1(md5: str, total_size: int, block_size: int):  #
     return "{md5:.5}_{total_size}_{block_size}_{{index:0{block_ipad}d}}_{{md5:.5}}".format(
         block_ipad=len(str(total_size // block_size + (0 if (total_size % block_size != 0) else -1))),
         md5=md5,
@@ -318,7 +373,7 @@ def mask1(md5, total_size, block_size):  #
     )
 
 
-def mask2(md5, total_size, block_size):  #
+def mask2(md5: str, total_size: int, block_size: int):  #
     s = block_size
     for x in "BKMGTPEZY":
         v, r = divmod(s, 1024)
@@ -340,7 +395,7 @@ def mask2(md5, total_size, block_size):  #
         )
 
 
-def mask3(md5, total_size, block_size):  #
+def mask3(md5: str, total_size: int, block_size: int):  #
     s = block_size
     for x in "BKMGTPEZY":
         v, r = divmod(s, 1024)
@@ -362,7 +417,7 @@ def mask3(md5, total_size, block_size):  #
         )
 
 
-def mask4(md5, total_size, block_size):  #
+def mask4(md5: str, total_size: int, block_size: int):  #
     s = block_size
     for x in "BKMGTPEZY":
         v, r = divmod(s, 1024)
@@ -386,11 +441,11 @@ def set_mask(x):
     name_fmt = x
 
 
-class ChunkWriterBase(object):
-    pass
+class ChunkWriter(AutoGet):
+    chunk_size: int
 
 
-class ChunkWriter(ChunkWriterBase):
+class ChunkWriterDir(ChunkWriter):
     def __init__(self, chunk_size: int, dir: str):
         self.files = {}
         self.chunk_size = chunk_size
@@ -400,7 +455,8 @@ class ChunkWriter(ChunkWriterBase):
         if isinstance(o, ChunkLister):
             if self.chunk_size != o.chunk_size:
                 pass
-            elif what == "in":
+            elif what == "in":  #  New chunk started
+                # Create new temp file for incoming chunk
                 assert o.current_index not in self.files
                 from tempfile import NamedTemporaryFile as TempFile
 
@@ -412,25 +468,24 @@ class ChunkWriter(ChunkWriterBase):
 
                         makedirs(self.target_dir)
                 self.files[o.current_index] = TempFile(dir=self.target_dir, delete=None)
-            elif what == "out":
+            elif what == "out":  # Chunk completed
+                #  Closes temp file, stores path
                 assert isinstance(o, ChunkLister)
                 self.files[o.current_index].close()
                 self.files[o.current_index] = self.files[o.current_index].name
-            elif what == "data":
+            elif what == "data":  # Chunk data received
                 assert isinstance(o, ChunkLister)
+                # Writes chunk data to temp file
                 self.files[o.current_index].write(args[0])
         elif isinstance(o, BlobDescriptor):
             if what == "descriptor_saved":
-                desc = args[0]
-                h = desc["md5"]
-                # total_size = desc['size']
+                # Renames all chunks using descriptor metadata
+                desc: dict[str:object] = args[0]
                 block_size = self.chunk_size
-                # block_count = total_size//block_size + ((total_size%block_size != 0) and 1 or 0)
-                # block_ilast = block_count - 1
-                fmt = name_fmt(desc["md5"], desc["size"], block_size)
+                mask = name_fmt(desc["md5"], desc["size"], block_size)
                 for i, c in enumerate(desc["chunks"][block_size]):
                     path = self.files[i]
-                    name = fmt.format(index=i, md5=c["md5"])
+                    name = mask.format(index=i, md5=c["md5"])
                     self.final_name(path, name)
 
     def final_name(self, path, name):
@@ -444,39 +499,47 @@ class ChunkWriter(ChunkWriterBase):
         rename(path, path2)
 
 
-class ChunkWriterCmd(ChunkWriterBase):
-    def __init__(self, chunk_size, cmd, source_tmp=None, ranges=None):
+class ChunkWriterCmd(ChunkWriter):
+    """A chunk writer that executes shell commands for each processed chunk.
+
+    This writer handles chunk processing by:
+    1. Buffering chunk data in temporary storage (memory/file)
+    2. Executing user-provided shell commands when chunks are complete
+    3. Supporting range-based filtering for partial processing
+    4. Handling both memory and file-based temporary storage
+
+    """
+
+    tmp: IO
+
+    def __init__(self, chunk_size: int, cmd, source_tmp: None | str = None, ranges: None | list[tuple[int, int]] = None):
         self.cmd = cmd
         self.chunk_size = chunk_size
         self.ranges = ranges
         if source_tmp is not None:
             self.source_tmp = source_tmp
 
-    def __getattr__(self, name):
-        if False:
-            pass
-        elif name == "source_tmp":
-            self.__dict__[name] = "file"
-        elif name == "tmp":
-            _ = self.source_tmp
-            if not _:
-                from tempfile import TemporaryFile as TempFile
+    def _get_source_tmp(self):
+        return "file"
 
-                self.__dict__[name] = TempFile()
-            elif _ == "mem":
-                from io import BytesIO
+    def _get_tmp(self):
+        _ = self.source_tmp
+        if not _:
+            from tempfile import TemporaryFile as TempFile
 
-                self.__dict__[name] = BytesIO()
-            else:
-                self.__dict__[name] = open(_, "wb")
+            return TempFile()
+        elif _ == "mem":
+            from io import BytesIO
+
+            return BytesIO()
         else:
-            raise AttributeError(name)
-        return self.__dict__[name]
+            return open(_, "wb")
 
-    def allow(self, d):
+    def allow(self, d: dict[str, object]):
+        """Check if chunk should be processed based on index ranges."""
         ranges = self.ranges
         if ranges:
-            i = d["index"]
+            i: int = d["index"]
             for x in ranges:
                 if i >= x[0] and i <= x[1]:
                     return True
@@ -484,6 +547,7 @@ class ChunkWriterCmd(ChunkWriterBase):
         return True
 
     def update(self, o, what, *args):
+        """Handle chunk processing events."""
         if isinstance(o, BlobDescriptor):
             if what == "descriptor_saved":
                 self.again(o, args[0])
@@ -499,7 +563,6 @@ class ChunkWriterCmd(ChunkWriterBase):
             elif what == "out":
                 assert isinstance(o, ChunkLister)
                 d = args[0]
-                # print(d["size"], self.tmp.tell() )
                 assert d["size"] == self.tmp.tell()
                 self.tmp.seek(0)
                 r = self.descriptor["chunks"][self.chunk_size][d["index"]]
@@ -513,7 +576,8 @@ class ChunkWriterCmd(ChunkWriterBase):
                 assert isinstance(o, ChunkLister)
                 self.tmp.write(args[0])
 
-    def again(self, bd, desc):
+    def again(self, bd: BlobDescriptor, desc: dict[str, object]):
+        """Re-process descriptor to trigger command execution."""
         total_size = desc["size"]
         block_size = self.chunk_size
         block_count = total_size // block_size + ((total_size % block_size != 0) and 1 or 0)
@@ -535,13 +599,12 @@ class ChunkWriterCmd(ChunkWriterBase):
                 cl.update(b)
         cl.get_chunks()  # push the last
 
-    def upload(self, src, name):
+    def upload(self, src: IO, name: str):
+        """Execute the configured command for a completed chunk."""
         from logging import info
         from shlex import quote
         from subprocess import Popen, check_call, PIPE
 
-        # info("Calling {!r} {!r}".format(self.cmd, (name, src.name, self.chunk_size, src)))
-        # pipe = self.source_tmp in ('mem', '')
         kwa = dict(name=quote(name), size=str(self.chunk_size))
         ckw = dict(shell=True)
         if self.source_tmp == "mem":
@@ -554,11 +617,11 @@ class ChunkWriterCmd(ChunkWriterBase):
             kwa["file"] = "-"
         cmd = self.cmd.format(**kwa)
         info("Calling {!r}".format(cmd))
+        environ["FILE"] = kwa["file"]
+        environ["NAME"] = name
+        environ["SIZE"] = kwa["size"]
+
         if self.source_tmp == "mem":
             Popen(cmd, **ckw).communicate(src.getvalue())
         else:
             check_call(cmd, **ckw)
-
-
-r"""
-"""

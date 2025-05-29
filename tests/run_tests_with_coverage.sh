@@ -11,7 +11,7 @@ rm -rf $DOCS
 python -m pytest tests/ \
   --cov=$NAME \
   --cov-append \
-  --cov-report=term-missing
+  --cov-report=term-missing || exit 1
 
 # Combine all coverage data
 python -m coverage combine

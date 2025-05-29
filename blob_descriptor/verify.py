@@ -73,6 +73,15 @@ class Verify(Main):
             finder.search(d)
         return finder
 
+    def ready(self) -> None:
+        from logging import basicConfig
+        from os import environ
+
+        format = environ.get("LOG_FORMAT", "%(levelname)s: %(message)s")
+        level = environ.get("LOG_LEVEL", "INFO")
+        basicConfig(format=format, level=level)
+        return super().ready()
+
     def descriptor_files(self):
         from os.path import exists, isabs, join, isfile
 
@@ -104,11 +113,11 @@ class Verify(Main):
 
         desc = const.descriptor
         total_size = desc["size"]
-        block_sizes = set(x for x in desc["chunks"].keys())
+        block_sizes: set[int] = set(x for x in desc["chunks"].keys())
         files = desc["files"]
 
         if 1:
-            block_sizes_map = dict((s, {}) for s in block_sizes)
+            block_sizes_map: dict[int, dict[str, object]] = dict((s, {}) for s in block_sizes)
             # print(block_sizes_map)
             for s in block_sizes:
                 total_blocks = total_size // s + (1 if (total_size % s) else 0)

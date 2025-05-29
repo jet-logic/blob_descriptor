@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "blob_descriptor"
-version = "0.0.5"
-description = ""
+version = "0.0.6"
+description = "Toolkit for managing large binary files through chunking and metadata descriptors"
 readme = "README.md"
 authors = [
     {name = "Jet-Logic"},
@@ -23,11 +23,14 @@ classifiers = [
     "Programming Language :: Python :: 3.11",
     "Operating System :: OS Independent",
     "Environment :: Console",
+    "Topic :: System :: Filesystems",
     "Topic :: Utilities",
 ]
-keywords = ["rename", "files", "regex", "cli", "batch"]
+keywords = ["blob", "chunk", "descriptor", "metadata", "binary", "files"]
 requires-python = ">=3.7"
-dependencies = []
+dependencies = [
+    "requests>=2.25.0",  # For URLSource functionality
+]
 
 [project.urls]
 Homepage = "https://github.com/jet-logic/blob_descriptor"
@@ -50,7 +53,13 @@ dev = [
     "flake8>=4.0",
     "mypy>=0.900",
     "isort>=5.0",
+    "twine>=3.0",
 ]
+docs = [
+    "sphinx>=4.0",
+    "furo>=2021.11",
+]
+
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

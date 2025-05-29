@@ -11,12 +11,12 @@ class Assemble(Verify):
     max_sectors: int = flag("Max sectors to write", metavar="N")
     rm_extra_blocks: bool = flag("Remove uneeded blocks", default=False)
     sink: str = flag("sink", help="Write blob to SINK", metavar="SINK")
-    dry_run: bool = flag("act", "not a trial run", default=True)
+    dry_run: bool = flag("dry-run", "not a trial run", default=False)
 
     def start(self) -> None:
 
         from os.path import exists
-        from ..construct import RequestSectorReader, HtttpRangeSectorReader
+        from .construct import RequestSectorReader, HtttpRangeSectorReader
 
         # print(app.config_path)
         def get_params():
@@ -39,10 +39,10 @@ class Assemble(Verify):
         params = get_params()
         finder = self.find_chunks()
 
-        print(self.descriptor)
-        print(self.chunks)
-        print(self.config_path)
-        print(self.chunk_paths.keys())
+        # print(self.descriptor)
+        # print(self.chunks)
+        # print(self.config_path)
+        # print(self.chunk_paths.keys())
 
         if self.sink:
             f = self.sink
@@ -69,7 +69,7 @@ class Assemble(Verify):
                 self.write_to_dir(f, finder, params)
 
     def write_to_file(self, path: str, finder: ChunkFinder, params: dict, sink):
-        from ..construct import Sink
+        from .construct import Sink
 
         const = Sink(path)
         const.chunk_finders.append(finder)
@@ -77,7 +77,7 @@ class Assemble(Verify):
 
     def write_to_dir(self, path: str, finder: ChunkFinder, params: dict):
         # OUT: Write to directory
-        from ..construct import SerialConstructor
+        from .construct import SerialConstructor
         from os.path import exists
 
         const = SerialConstructor(path)

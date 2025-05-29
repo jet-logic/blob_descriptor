@@ -14,8 +14,8 @@ class Check(Verify):
         const.chunk_finders.append(finder)
         print("chunks", const.descriptor["chunks"].keys())
 
-        total_size = const.descriptor["size"]
-        block_sizes = set(x["block_size"] for x in const.sources)
+        total_size: int = int(const.descriptor["size"])
+        block_sizes: set[int] = set(x["block_size"] for x in const.sources)
         has_ranges = sort_condense(list(const.available_ranges()))
         print("available_ranges", has_ranges, *const.descriptor.keys())
         non_ranges = sort_condense(list(const.non_available_ranges()))
@@ -26,7 +26,7 @@ class Check(Verify):
         for s in block_sizes:
             total_blocks = total_size // s + (1 if (total_size % s) else 0)
             bmap[s]["index_map"] = index_map = dict((i, None) for i in range(total_blocks))
-            print("block_size:", s, total_blocks)
+            print(f"block_size: {s}b x{total_blocks}")
             for a, b in non_ranges:
                 d = b - a
                 assert d > 0

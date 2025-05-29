@@ -1,6 +1,6 @@
 from os.path import relpath, basename
 from urllib.parse import urlparse
-from . import BlobDescriptor, ChunkWriter, ChunkWriterCmd, FileSource, URLSource
+from . import BlobDescriptor, ChunkWriterDir, ChunkWriterCmd, FileSource, URLSource
 from .main import Main, arg, flag
 from .utils import filesizep
 
@@ -24,7 +24,7 @@ class Observer:
 class Create(Main):
     files: list[str] = arg("files to add", nargs="+")
     duplicate: bool = flag("link duplicate files", default=None)
-    dry_run: bool = flag("act", "a", "not a trial run", default=True)
+    dry_run: bool = flag("dry-run", "not a trial run", default=False)
     base_dir: str = flag("b", "sub directory of files added in descriptor", default="")
     out: str = flag("o", "out", "save descriptor to FILE", metavar="FILE")
     mask: int = flag("m", "mask", "chunks name mask", choices=[1, 2, 3, 4])
@@ -67,7 +67,7 @@ class Create(Main):
 
         for x in self.chunk_write:
             size, wdir = [v.strip() for v in x.split(",")]
-            bd.chunk_writers.append(ChunkWriter(filesizep(size), wdir))
+            bd.chunk_writers.append(ChunkWriterDir(filesizep(size), wdir))
 
         for x in self.chunk_call:
             size, tmp, cmd, *etc = [v.strip() for v in x.split(",")]
@@ -95,6 +95,9 @@ class Create(Main):
             def fn(desc, path, *args):
                 pwd, name = split(abspath(path))
                 ckw = dict(shell=True)
+                environ["NAME"] = name
+                environ["FILE"] = path
+                environ["DIR"] = pwd
                 cmd = self.cmd_on_saved.format(**dict(name=quote(name), file=quote(path), dir=quote(pwd)))
                 check_call(cmd, **ckw)
 
@@ -112,7 +115,6 @@ class Create(Main):
             elif "://" in f:
                 bd.files.append(URLSource(f))
             elif "-" == f:
-
                 for s in stdin:
                     f = s.strip()
                     if not f:

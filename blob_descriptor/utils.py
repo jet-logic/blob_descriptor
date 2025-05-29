@@ -64,10 +64,15 @@ def sort_condense(ivs):
     return ret
 
 
-def filesizep(s) -> int:
-    for i, v in enumerate("bkmgtpezy"):
-        if s[-1].lower().endswith(v):
-            return int(s[0:-1]) * (2 ** (10 * i))
+def filesizep(s: str):
+    if s[0].isnumeric() or s[0].startswith("."):
+        q = s.lower()
+        if q.endswith("b"):
+            q = q[0:-1]
+        for i, v in enumerate("kmgtpezy"):
+            if q[-1].endswith(v):
+                return int(float(q[0:-1]) * (2 ** (10 * (i + 1))))
+        return int(q)
     return int(s)
 
 
