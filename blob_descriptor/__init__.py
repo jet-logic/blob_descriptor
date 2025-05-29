@@ -31,7 +31,7 @@ class ChunkLister(object):
         self.encoder = lambda b: b64encode(b).decode()
         self.mdnew = md5
         self.observers = []  #  List of observer objects to notify
-        self.chunks: list[dict[str, str | int]] = []  # List of chunk metadata dictionaries
+        self.chunks: "list[dict[str, str | int]]" = []  # List of chunk metadata dictionaries
         self.current_md = self.mdnew()  # Current hash object being built
         self.current_n = 0  # Bytes accumulated in current chunk
         self.current_index = 0  # Index of current chunk
@@ -100,7 +100,7 @@ class BlobDescriptor(object):
         self.files: list[Source] = []  # List of Source objects to process
         self.no_duplicates = None  # hether to check for duplicates
         self.observers = []  # List of observer objects
-        self.chunk_writers: list[int | ChunkWriter] = [
+        self.chunk_writers: "list[int | ChunkWriter]" = [
             512 * 1024,
         ]  # List of chunk writer configurations
 
@@ -191,7 +191,7 @@ class BlobDescriptor(object):
 
         return join(dir, prefix + stem + suffix + ext)
 
-    def save(self, path: str | dict, **kwargs):
+    def save(self, path: "str | dict", **kwargs):
         """Save descriptor to file"""
         desc = self.make_descriptor(**kwargs)
         if not path:
@@ -285,8 +285,8 @@ class Source(AutoGet):
     """Base class for data sources."""
 
     path: str  # Logical path for the source
-    md5: str | None
-    size: int | None
+    md5: "str | None"
+    size: "int | None"
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}({self.path!r})"
@@ -328,7 +328,7 @@ class RegSource(Source):
 class FileSource(Source):
     """Source for file-like objects with pre-known metadata."""
 
-    def __init__(self, file, path: str = None, size: int | None = None, md5: str = ""):
+    def __init__(self, file, path: str = None, size: "int | None" = None, md5: str = ""):
         self.file = file
         self.path = path
         if size is not None:
@@ -512,7 +512,7 @@ class ChunkWriterCmd(ChunkWriter):
 
     tmp: IO
 
-    def __init__(self, chunk_size: int, cmd, source_tmp: None | str = None, ranges: None | list[tuple[int, int]] = None):
+    def __init__(self, chunk_size: int, cmd, source_tmp: "None | str" = None, ranges: "None | list[tuple[int, int]]" = None):
         self.cmd = cmd
         self.chunk_size = chunk_size
         self.ranges = ranges

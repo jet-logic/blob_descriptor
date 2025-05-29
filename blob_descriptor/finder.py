@@ -164,7 +164,7 @@ class ChunkFinder(object):
             print("Error adding {!r}".format(m))
             raise
 
-    def items(self, md5: str, size: int, part_len: None | int = None):
+    def items(self, md5: str, size: int, part_len: "None | int" = None):
         size_map = self.map_sizes.get(size) or {}
         for md5_prefix in size_map:
             if not md5.startswith(md5_prefix):
