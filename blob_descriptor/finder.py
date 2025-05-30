@@ -29,7 +29,7 @@ class ChunkFinder(object):
     re_url = compile_re(r"(?P<scheme>https?|ftp)\:\/\/.+")
 
     def __init__(self):
-        self.map_sizes: dict[int, dict[str, dict[int, dict[int, list[dict]]]]] = {}
+        self.map_sizes: "dict[int, dict[str, dict[int, dict[int, list[dict]]]]] " = {}
         self.map_parts = {}
 
     def iter_url_name(self, url):
@@ -164,7 +164,7 @@ class ChunkFinder(object):
             print("Error adding {!r}".format(m))
             raise
 
-    def items(self, md5: str, size: int, part_len: None | int = None):
+    def items(self, md5: str, size: int, part_len: "None | int" = None):
         size_map = self.map_sizes.get(size) or {}
         for md5_prefix in size_map:
             if not md5.startswith(md5_prefix):

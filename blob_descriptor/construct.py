@@ -5,14 +5,14 @@ from .descriptor import read_descriptor
 
 
 class HtttpRangeSectorReader(AutoGet):
-    def __init__(self, url, start: int, end: int, sector_size: int, rkw={}):
+    def __init__(self, url: str, start: int, end: int, sector_size: int, rkw={}):
         self.start = start  # absolute start
         self.end = end  # absolute end
         self.url = url
         self.sector_size = sector_size
         self.rkw = rkw
         self.resp = None
-        self.last = [None, None]
+        self.last: "list[int]" = [None, None]
 
     def at(self, pos_abs: int):
         from logging import info
@@ -296,7 +296,7 @@ class SerialConstructor(AutoGet):
 
     def __init__(self, file):
         self.descriptor = read_descriptor(file)
-        self.chunk_finders: list[ChunkFinder] = []
+        self.chunk_finders: "list[ChunkFinder]" = []
 
     def _get_sources(self):
         from itertools import chain

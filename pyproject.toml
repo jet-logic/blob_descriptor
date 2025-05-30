@@ -1,33 +1,31 @@
 [build-system]
-requires = ["setuptools>=42", "wheel"]
+requires = ["setuptools", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "blob_descriptor"
-version = "0.0.5"
-description = ""
+version = "0.0.2"
+description = "Toolkit for managing large binary files through chunking and metadata descriptors"
 readme = "README.md"
 authors = [
     {name = "Jet-Logic"},
 ]
-license-files = ["LICEN[CS]E*"]
+license = {file = "LICENSE"} 
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
     "Intended Audience :: System Administrators",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.7",
-    "Programming Language :: Python :: 3.8",
-    "Programming Language :: Python :: 3.9",
-    "Programming Language :: Python :: 3.10",
-    "Programming Language :: Python :: 3.11",
     "Operating System :: OS Independent",
     "Environment :: Console",
+    "Topic :: System :: Filesystems",
     "Topic :: Utilities",
 ]
-keywords = ["rename", "files", "regex", "cli", "batch"]
-requires-python = ">=3.7"
-dependencies = []
+keywords = ["blob", "chunk", "descriptor", "metadata", "binary", "files"]
+requires-python = ">=3.8"
+dependencies = [
+    "requests",  # For URLSource functionality
+]
 
 [project.urls]
 Homepage = "https://github.com/jet-logic/blob_descriptor"
@@ -41,21 +39,15 @@ blob_descriptor = "blob_descriptor.__main__:main"
 
 [project.optional-dependencies]
 test = [
-    "pytest>=6.0",
-    "pytest-cov>=2.0",
-    "pytest-mock>=3.0",
+    "pytest",
+    "pytest-cov",
 ]
 dev = [
-    "black>=22.0",
-    "flake8>=4.0",
-    "mypy>=0.900",
-    "isort>=5.0",
+    "black",
+    "flake8",
+    "mypy",
+    "twine",
 ]
-
-[tool.pytest.ini_options]
-testpaths = ["tests"]
-python_files = "test_*.py"
-addopts = "--cov=blob_descriptor --cov-report=term-missing"
 
 [tool.black]
 line-length = 127

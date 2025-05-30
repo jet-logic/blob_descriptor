@@ -61,7 +61,7 @@ class Test(unittest.TestCase):
             with open("carrot", "wb") as w:
                 w.write(carrot)
             shell(
-                "python3 -m blob_descriptor create -a -o file.bd --cw 1m,1M carrot apple banana",
+                "python3 -m blob_descriptor create -o file.bd --cw 1m,1M carrot apple banana",
             )
             total_size = sum(len(x) for x in [apple, banana, carrot])
 
@@ -73,7 +73,7 @@ class Test(unittest.TestCase):
 
             try:
                 shell(
-                    "python3 -m blob_descriptor create -a -o file.bd --cs 700k --cw 1m,1M stdin:///input",
+                    "python3 -m blob_descriptor create -o file.bd --cs 700k --cw 1m,1M stdin:///input",
                     stdin=tf,
                 )
             except Exception:
