@@ -1,6 +1,6 @@
 from os.path import relpath, basename
 from urllib.parse import urlparse
-from . import BlobDescriptor, ChunkWriterDir, ChunkWriterCmd, FileSource, URLSource
+from . import BlobDescriptor, ChunkWriterDir, ChunkWriterCmd, FileSource, URLSource, shell_quote
 from .main import Main, arg, flag
 from .utils import filesizep
 
@@ -98,7 +98,7 @@ class Create(Main):
                 environ["NAME"] = name
                 environ["FILE"] = path
                 environ["DIR"] = pwd
-                cmd = self.cmd_on_saved.format(**dict(name=quote(name), file=quote(path), dir=quote(pwd)))
+                cmd = self.cmd_on_saved.format(**dict(name=shell_quote(name), file=shell_quote(path), dir=shell_quote(pwd)))
                 check_call(cmd, **ckw)
 
             obs.when["descriptor_saved"] = fn

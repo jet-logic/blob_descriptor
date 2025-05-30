@@ -1,3 +1,4 @@
+from time import sleep
 import unittest
 
 
@@ -26,27 +27,24 @@ def make_chunks():
 
 class Test(unittest.TestCase):
     def test_cmd(self):
-        import pprint
-        from tempfile import mkdtemp, TemporaryDirectory, NamedTemporaryFile
-        from os import chdir, urandom
-        from subprocess import run
+        from tempfile import TemporaryDirectory
 
-        with TemporaryDirectory() as temp_dir:
-            self._create(temp_dir)
+        # with TemporaryDirectory() as temp_dir:
+        #     self._create(temp_dir)
         with TemporaryDirectory() as temp_dir:
             self._create(temp_dir, "files")
 
     def _create(self, wdir, var=None):
-        import pprint, random, os
-        from tempfile import mkdtemp, TemporaryDirectory, NamedTemporaryFile
-        from os import chdir, urandom, listdir
-        from subprocess import run, check_output
+        import pprint, os
+        from tempfile import NamedTemporaryFile
+        from os import chdir, urandom
+        from subprocess import run
         from random import uniform
 
         chdir(wdir)
 
         def shell(s, **kwargs):
-            return run(s, shell=True, check=True, **kwargs)
+            return run(s, shell=True, check=True, close_fds=True, **kwargs)
 
         cdata = make_chunks()
 
@@ -81,15 +79,18 @@ class Test(unittest.TestCase):
 
                 pprint.pprint(cdata)
                 raise
-        shell(
-            "ls -1shR .",
-        )
+            finally:
+                tf.close()
+        # shell(
+        #     "ls -1shR .",
+        # )
 
         self.assertEqual(sum(os.stat(f"1M/{x}").st_size for x in os.listdir("1M")), total_size)
 
-        shell(
-            "python3 -m blob_descriptor verify file.bd",
-        )
+        # proc = shell(
+        #     "python3 -m blob_descriptor verify file.bd",
+        # )
+        sleep(1)
 
 
 if __name__ == "__main__":

@@ -1,10 +1,6 @@
-[build-system]
-requires = ["setuptools", "wheel"]
-build-backend = "setuptools.build_meta"
-
 [project]
 name = "blob_descriptor"
-version = "0.0.2"
+dynamic = ["version"]
 description = "Toolkit for managing large binary files through chunking and metadata descriptors"
 readme = "README.md"
 authors = [
@@ -48,6 +44,13 @@ dev = [
     "mypy",
     "twine",
 ]
+
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.dynamic]
+version = {attr = "blob_descriptor.__init__.__version__"}
 
 [tool.black]
 line-length = 127

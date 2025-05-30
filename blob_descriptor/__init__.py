@@ -2,6 +2,8 @@ from logging import info
 from typing import IO
 from .descriptor import write_descriptor
 
+__version__ = "0.0.3"
+
 
 class AutoGet:
 
@@ -485,6 +487,7 @@ class ChunkWriterDir(ChunkWriter):
                 mask = name_fmt(desc["md5"], desc["size"], block_size)
                 for i, c in enumerate(desc["chunks"][block_size]):
                     path = self.files[i]
+                    assert isinstance(path, str)
                     name = mask.format(index=i, md5=c["md5"])
                     self.final_name(path, name)
 
@@ -625,3 +628,15 @@ class ChunkWriterCmd(ChunkWriter):
             Popen(cmd, **ckw).communicate(src.getvalue())
         else:
             check_call(cmd, **ckw)
+
+
+import sys
+import shlex
+import subprocess
+
+
+def shell_quote(arg):
+    if sys.platform == "win32":
+        return subprocess.list2cmdline([arg])
+    else:
+        return shlex.quote(arg)

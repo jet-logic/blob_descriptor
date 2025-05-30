@@ -1,4 +1,5 @@
 from argparse import ArgumentParser
+from . import __version__
 from .check import Check
 from .verify import Verify
 from .assemble import Assemble
@@ -11,6 +12,7 @@ class App(Main):
 
     def init_argparse(self, argp: ArgumentParser) -> None:
         argp.prog = "blob_descriptor"
+        argp.add_argument("--version", action="version", version=f"{__version__}")
         return super().init_argparse(argp)
 
     def sub_args(self) -> object:

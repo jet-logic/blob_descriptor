@@ -65,9 +65,12 @@ class TestBlobDescriptorCLI(unittest.TestCase):
         self.assertTrue(a)
 
         # Verify all files were included
-        self.assertIn("file1.bin", result.stderr)
-        self.assertIn("subdir/file2.bin", result.stderr)
-        self.assertIn("subdir2/nested/file3.bin", result.stderr)
+        # self.assertIn(str(Path("file1.bin")), result.stderr)
+        self.assertRegex(result.stderr, r"\W+file1.bin\W+")
+        # self.assertIn(str(Path("subdir", "file2.bin")), result.stderr)
+        self.assertRegex(result.stderr, r"\W+subdir\W+file2.bin\W+")
+        # self.assertIn(str(Path("subdir2", "nested", "file3.bin")), result.stderr)
+        self.assertRegex(result.stderr, r"\W+subdir2\W+nested\W+file3.bin\W+")
 
     # @unittest.skip("Enable when testing create command")
     def test_create_command(self):
@@ -82,16 +85,17 @@ class TestBlobDescriptorCLI(unittest.TestCase):
                 "--o:dir",
                 self.other_dir,
                 "--on-saved",
-                "python -c \"open('saved.txt', 'w').write(r'{name} {file} {dir}')\"",
+                "python -c \"from sys import argv; open('saved.txt', 'w').write('|'.join(argv[1:]))\" {name} {file} {dir}",
                 str(self.file1),
                 str(self.file2),
             ]
         )
-        subprocess.run(["find", self.test_dir])
-        subprocess.run(["cat", self.test_dir / "saved.txt"])
+        # subprocess.run(["find", self.test_dir])
+        # subprocess.run(["cat", self.test_dir / "saved.txt"])
+        print("SAVED", (self.test_dir / "saved.txt").read_text())
         self.assertEqual(result.returncode, 0)
         with (self.test_dir / "saved.txt").open() as f:
-            n, f, d = f.read().split()
+            n, f, d = f.read().split("|")
             self.assertEqual(self.other_dir, Path(d))
             self.assertEqual(Path(f).parent, Path(d))
             self.assertEqual(Path(f).name, n)
@@ -102,7 +106,7 @@ class TestBlobDescriptorCLI(unittest.TestCase):
     def test_verify_command(self):
         # First create a descriptor
         self._run_command(["create", "--cw", "1M,1MChunks", "-o", "verify_test.bd", str(self.file1)])
-        subprocess.run(["find", self.test_dir])
+        # subprocess.run(["find", self.test_dir])
         # Then verify it
         result = self._run_command(["verify", "verify_test.bd", self.test_dir / "1MChunks", "-d", self.file1.parent])
         self.assertEqual(result.returncode, 0)
