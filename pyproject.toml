@@ -1,0 +1,78 @@
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "blob_descriptor"
+version = "0.0.2"
+description = "Toolkit for managing large binary files through chunking and metadata descriptors"
+readme = "README.md"
+authors = [
+    {name = "Jet-Logic"},
+]
+license = {file = "LICENSE"} 
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Intended Audience :: System Administrators",
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+    "Environment :: Console",
+    "Topic :: System :: Filesystems",
+    "Topic :: Utilities",
+]
+keywords = ["blob", "chunk", "descriptor", "metadata", "binary", "files"]
+requires-python = ">=3.8"
+dependencies = [
+    "requests",  # For URLSource functionality
+]
+
+[project.urls]
+Homepage = "https://github.com/jet-logic/blob_descriptor"
+Documentation = "https://github.com/jet-logic/blob_descriptor#readme"
+BugTracker = "https://github.com/jet-logic/blob_descriptor/issues"
+Changelog = "https://github.com/jet-logic/blob_descriptor/releases"
+
+[project.scripts]
+blob_descriptor = "blob_descriptor.__main__:main"
+
+
+[project.optional-dependencies]
+test = [
+    "pytest",
+    "pytest-cov",
+]
+dev = [
+    "black",
+    "flake8",
+    "mypy",
+    "twine",
+]
+
+[tool.black]
+line-length = 127
+target-version = ['py37']
+include = '\.pyi?$'
+exclude = '''
+/(
+    \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | _build
+  | buck-out
+  | build
+  | dist
+)/
+'''
+
+[tool.isort]
+profile = "black"
+multi_line_output = 3
+include_trailing_comma = true
+force_grid_wrap = 0
+use_parentheses = true
+ensure_newline_before_comments = true
+line_length = 88
+known_first_party = ["blob_descriptor"]
