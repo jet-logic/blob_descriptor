@@ -1,3 +1,4 @@
+import sys
 from time import sleep
 import unittest
 
@@ -25,12 +26,13 @@ def make_chunks():
     return m
 
 
+@unittest.skipUnless(not sys.platform.startswith("win"), "Permission Errors on Windows")
 class Test(unittest.TestCase):
     def test_cmd(self):
         from tempfile import TemporaryDirectory
 
-        # with TemporaryDirectory() as temp_dir:
-        #     self._create(temp_dir)
+        with TemporaryDirectory() as temp_dir:
+            self._create(temp_dir)
         with TemporaryDirectory() as temp_dir:
             self._create(temp_dir, "files")
 
