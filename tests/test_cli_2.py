@@ -92,6 +92,7 @@ class TestBlobDescriptorCLI(unittest.TestCase):
         )
         # subprocess.run(["find", self.test_dir])
         # subprocess.run(["cat", self.test_dir / "saved.txt"])
+        print("SAVED", (self.test_dir / "saved.txt").read_text())
         self.assertEqual(result.returncode, 0)
         with (self.test_dir / "saved.txt").open() as f:
             n, f, d = f.read().split("|")
