@@ -1,10 +1,9 @@
-import re
 import unittest
 import os
 import tempfile
 import subprocess
-from pathlib import Path
 import shutil
+from pathlib import Path
 
 
 class TestBlobDescriptorCLI(unittest.TestCase):

@@ -15,7 +15,7 @@ class App(Main):
         argp.add_argument("--version", action="version", version=f"{__version__}")
         return super().init_argparse(argp)
 
-    def sub_args(self) -> object:
+    def sub_args(self):
         """Register all subcommands."""
         yield Verify(), {"name": "verify", "help": "Check files"}
         yield Check(), {"name": "check", "help": "Check chunks"}

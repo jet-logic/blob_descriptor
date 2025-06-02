@@ -293,6 +293,7 @@ def vopen(f):
 
 class SerialConstructor(AutoGet):
     pwd: str
+    sources: "list[dict]"
 
     def __init__(self, file):
         self.descriptor = read_descriptor(file)

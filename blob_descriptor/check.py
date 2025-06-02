@@ -78,7 +78,7 @@ class Check(Verify):
         for f in self.descriptor_files():
             self.VERIFY(f, finder)
 
-        a = {}
+        a: "dict[str,object]" = {}
         for x in finder.all():
             p = a.get(x["checksum"])
             if p is None:

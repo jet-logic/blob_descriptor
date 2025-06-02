@@ -102,7 +102,7 @@ class Assemble(Verify):
                     except Exception:
                         print(b_end, b_end0)
                         raise
-                    path = v.get("path")
+                    path = v.get("path", "")
                     if b_start >= s and b_end <= e and path and exists(path):
                         print("RM {}-{} {}-{} {!r}".format(s, e, b_start, b_end, path))
                         if self.dry_run is False:

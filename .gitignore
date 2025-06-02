@@ -137,6 +137,7 @@ dmypy.json
 # Cython debug symbols
 cython_debug/
 
+.ruff_cache/
 .pytest_cache/
 .vscode/
 *.tar.*

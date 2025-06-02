@@ -41,8 +41,9 @@ test = [
 dev = [
     "black",
     "flake8",
+    "flake8-pyproject",
     "mypy",
-    "twine",
+    "twine"
 ]
 
 [build-system]
@@ -54,7 +55,7 @@ version = {attr = "blob_descriptor.__init__.__version__"}
 
 [tool.black]
 line-length = 127
-target-version = ['py37']
+target-version = ['py38']
 include = '\.pyi?$'
 exclude = '''
 /(
@@ -70,12 +71,8 @@ exclude = '''
 )/
 '''
 
-[tool.isort]
-profile = "black"
-multi_line_output = 3
-include_trailing_comma = true
-force_grid_wrap = 0
-use_parentheses = true
-ensure_newline_before_comments = true
-line_length = 88
-known_first_party = ["blob_descriptor"]
+[tool.flake8]
+max-line-length = 127
+
+[tool.mypy]
+files = [    "blob_descriptor"]
